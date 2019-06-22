@@ -9,7 +9,7 @@ To ensure that the python modules <b>requests</b> and <b>bs4</b> are on a workin
 ```
 pip install -r requirements.txt
 ```
-You will also need 3.7.3.
+You will also need Python 3.7.3.
 
 ### Usage
 ```
