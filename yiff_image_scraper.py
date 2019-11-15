@@ -91,7 +91,7 @@ def downloadImages(url, urlCounter):
                 print("beep -- file skipped: " + longUrl)
 
     #Just a finishing message.
-    print("\nSuccessfully downloaded " + str(len(imageCounter)) + " Images!\n")
+    print("\nSuccessfully downloaded " + str(imageCounter) + " Images!\n")
     print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
 
 #Loops through all Yiff.party-Urls and downloads the images.
