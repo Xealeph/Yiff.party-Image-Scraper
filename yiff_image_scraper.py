@@ -6,8 +6,7 @@ import os
 amountOfLinks = len(sys.argv)-1
 urlCounter = 0
 urlList = []
-userAgent = "Mozilla/5.0 (X11; Linux i586; rv:31.0) Gecko/20100101 Firefox/31.0"
-
+userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
 
 print("\n======Starting Scraper========")
 
@@ -24,8 +23,39 @@ if not os.path.isdir(".\\Images\\"):
     os.mkdir(".\\Images\\")
 
 
+def accountForDuplicates(bList):
+    counter = 0
+    for h in range(len(bList)-2):
+        if bList[h] == bList[h+1]:
+            bList[h] = str(counter) + " " + bList[h]
+            counter += 1
+    return bList
+        
+
+def makeConformUrl(aList):
+    for k in range(len(aList)-1):
+        if(str(aList[k]).startswith("/")):
+            aList[k] = "https://yiff.party" + str(aList[k])
+    return aList
+
+
+def persistentDownloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to download the images - in the case of the site not accepting anymore requests
+    try:
+        r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
+        if r.status_code == 200:
+            with open(".\\Images\\" + myPatreonAuthor + "\\" + myImageName, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
+        else:
+            print("beep -- file skipped: " + myUrl)
+    except:
+        print("Skipped " + myUrl)
+        return
+
+
 def downloadImages(url, urlCounter):
     linkList = []
+    imageNameList = []
     imgContainerUrls = []
     imageCounter = 0
 
@@ -47,7 +77,6 @@ def downloadImages(url, urlCounter):
 
     newUrl = "https://yiff.party/render_posts?s=patreon&c=" + patreonAuthor + "&p="
 
-
     #searches for the highest page number
     lastPage = soup.find_all('a', {'class':'btn pag-btn'})
     
@@ -56,19 +85,19 @@ def downloadImages(url, urlCounter):
 
         for i in range(0, lastPage-1):
             imgContainerUrls.append(newUrl + str(i+1)) #appends the page number to the url
-            #print(imgContainerUrls)
     except:
         lastPage = 1
         imgContainerUrls.append(newUrl + str(1))
     
-
     for containerUrl in imgContainerUrls:
         response = requests.get(containerUrl, headers = {'User-Agent': userAgent})
         soup = bs(response.text, "html.parser")
 
-        containersHalf1 = soup.find_all('div', {'class': 'card-action'})
-        containersHalf2 = soup.find_all('div', {'class': 'post-body'})
-        containers = containersHalf1 + containersHalf2
+        containersPart1 = soup.find_all('div', {'class': 'card-action'})
+        containersPart2 = soup.find_all('div', {'class': 'post-body'})
+        containersPart3 = soup.find_all('div', {'class': 'card-attachments'})
+
+        containers = containersPart1 + containersPart2 + containersPart3
 
         #Checks if there are any images and returns an error if not. Also skips the url.
         try:
@@ -78,45 +107,59 @@ def downloadImages(url, urlCounter):
             print("Skipping url: " + url + "\n")
             print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
             return
-
-        imageCounter += len(containers) 
-        containerCounter = len(containersHalf1) #amount of containers with class 'card-action'
+ 
+        containerCounter1 = len(containersPart1) #amount of containers with class 'card-action'
+        containerCounter2 = len(containersPart2) #amount of containers with class 'post-body'
         i = 0 
-
+ 
         #Searches for Image-Boxes.
         for container in containers:
             i += 1
-            if i <= containerCounter:
+            if i <= containerCounter1:
                 try:
                     shortLink = container.a['href']
                 except:
                     continue
-            else:
+            elif i <= containerCounter2 and i > containerCounter1:
                 try:
                     shortLink = container.p.a['href']
+                except:
+                    continue
+            else:
+                try:
+                    subContainer = container.p
+                    subContainer = subContainer.find_all('a')
+                    for subCont in subContainer:
+                        linkList.append(subCont['href'])
                 except:
                     continue
 
             linkList.append(shortLink)
 
-        #Loops through the Image Urls amd downloads them.
-        for urlI in linkList:
-            
-            longUrl = "https://yiff.party" + urlI
+        linkList = makeConformUrl(sorted(linkList))
+        linkList = list(dict.fromkeys(linkList))
+        imageCounter += len(linkList)
 
-            imageName = urlI.split("/")[len(urlI.split("/"))-1]
+        for h in range(len(linkList)-1):
+            imageNameList.append(linkList[h].split("/")[len(linkList[h].split("/"))-1])
+        imageNameList = accountForDuplicates(sorted(imageNameList))
+
+        #print(imageCounter)
+        #print('\n'.join(map(str, sorted(linkList))))
+
+        #Loops through the Image Urls amd downloads them.
+        for i in range(len(linkList)-1):
+
+            imageName = imageNameList[i]
+            urlI = linkList[i]
+
             print("Downloading " + imageName)           #Shows the name of the current downloading image
-            r = requests.get(longUrl, headers = {'User-Agent': userAgent}, stream=True)
-            if r.status_code == 200:
-                with open(".\\Images\\" + patreonAuthor + "\\" + imageName, 'wb') as f:
-                    for chunk in r:
-                        f.write(chunk)
-            else:
-                print("beep -- file skipped: " + longUrl)
+            persistentDownloader(urlI, imageName, patreonAuthor)
 
     #Just a finishing message.
     print("\nSuccessfully downloaded " + str(imageCounter) + " Images!\n")
     print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
+
 
 #Loops through all Yiff.party-Urls and downloads the images.
 for url in urlList:
