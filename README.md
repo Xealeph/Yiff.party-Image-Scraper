@@ -24,4 +24,3 @@ python yiff_image_scraper.py https://yiff.party/patreon/42
 ```
 ### Known Issues
 File formats can sometimes be corrupt/invalid (e.g. image.pngformat)<br>
-Yiff.party stops accepting requests after some time and causes pictures to stop downloading
