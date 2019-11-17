@@ -23,13 +23,29 @@ if not os.path.isdir(".\\Images\\"):
     os.mkdir(".\\Images\\")
 
 
-def accountForDuplicates(bList):
+def accountForDuplicates(aDict):
     counter = 0
-    for h in range(len(bList)-2):
+    bList = [] 
+    cList = []
+    newDict = {}
+    aDict = sorted(aDict.items(), key=lambda item: item[1])
+    #print(aDict)
+    for i1 in range(len(aDict)):
+        #print(aDict[i1][1])
+        bList.append(aDict[i1][1])
+    for i2 in range(len(aDict)):
+        cList.append(aDict[i2][0])
+    bList.append("buffer")
+    cList.append("buffer")
+    for h in range(len(bList)-1):
         if bList[h] == bList[h+1]:
-            bList[h] = str(counter) + " " + bList[h]
+            #print(bList[h])
+            #updatedItem = {cList[h]:}
+            newDict[cList[h]] = (str(counter) + " " + bList[h])
             counter += 1
-    return bList
+        else:
+            newDict[cList[h]] = bList[h]
+    return newDict
         
 
 def makeConformUrl(aList):
@@ -39,7 +55,7 @@ def makeConformUrl(aList):
     return aList
 
 
-def persistentDownloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to download the images - in the case of the site not accepting anymore requests
+def downloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to download the images - in the case of the site not accepting anymore requests
     try:
         r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
         if r.status_code == 200:
@@ -54,8 +70,8 @@ def persistentDownloader(myUrl, myImageName, myPatreonAuthor): #recursively trie
 
 
 def downloadImages(url, urlCounter):
+    imageNameDict = {}
     linkList = []
-    imageNameList = []
     imgContainerUrls = []
     imageCounter = 0
 
@@ -81,13 +97,14 @@ def downloadImages(url, urlCounter):
     lastPage = soup.find_all('a', {'class':'btn pag-btn'})
     
     try: 
-        lastPage = int(lastPage[(len(lastPage)/2)-1]["data-pag"])
-
-        for i in range(0, lastPage-1):
+        lastPage = int(lastPage[1]["data-pag"])
+        #print(lastPage)
+        for i in range(0, lastPage):
             imgContainerUrls.append(newUrl + str(i+1)) #appends the page number to the url
     except:
         lastPage = 1
         imgContainerUrls.append(newUrl + str(1))
+    #print(imgContainerUrls)
     
     for containerUrl in imgContainerUrls:
         response = requests.get(containerUrl, headers = {'User-Agent': userAgent})
@@ -138,26 +155,29 @@ def downloadImages(url, urlCounter):
 
         linkList = makeConformUrl(sorted(linkList))
         linkList = list(dict.fromkeys(linkList))
-        imageCounter += len(linkList)
 
-        for h in range(len(linkList)-1):
-            imageNameList.append(linkList[h].split("/")[len(linkList[h].split("/"))-1])
-        imageNameList = accountForDuplicates(sorted(imageNameList))
+        for h in range(0, len(linkList)-1):
+            updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
+            imageNameDict.update(updatedValue)
 
+        imageNameDict = accountForDuplicates(imageNameDict)
+
+        #print(imageNameDict)
         #print(imageCounter)
         #print('\n'.join(map(str, sorted(linkList))))
 
         #Loops through the Image Urls amd downloads them.
         for i in range(len(linkList)-1):
 
-            imageName = imageNameList[i]
+            imageName = imageNameDict[str(i)]
             urlI = linkList[i]
 
             print("Downloading " + imageName)           #Shows the name of the current downloading image
-            persistentDownloader(urlI, imageName, patreonAuthor)
+            downloader(urlI, imageName, patreonAuthor)
+            imageCounter += 1
 
     #Just a finishing message.
-    print("\nSuccessfully downloaded " + str(imageCounter) + " Images!\n")
+    print("\nSuccessfully downloaded " + str(imageCounter) + " Images/Files!\n")
     print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
 
 
