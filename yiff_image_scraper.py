@@ -2,11 +2,19 @@ from bs4 import BeautifulSoup as bs
 import requests
 import sys
 import os
+import platform
 
 amountOfLinks = len(sys.argv)-1
 urlCounter = 0
 urlList = []
 userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
+dirSep = ""
+system = platform.system()
+
+if(system == 'Windows'):
+    dirSep = "\\"
+else:
+    dirSep = "/"
 
 print("\n======Starting Scraper========")
 
@@ -19,8 +27,8 @@ for n in range(amountOfLinks):
     urlList.append(sys.argv[n+1])
 
 #Creates Image Directory
-if not os.path.isdir(".\\Images\\"):
-    os.mkdir(".\\Images\\")
+if not os.path.isdir("."+ dirSep +"Images"+ dirSep +""):
+    os.mkdir("."+ dirSep +"Images"+ dirSep +"")
 
 
 def accountForDuplicates(aDict):
@@ -59,7 +67,7 @@ def downloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to downl
     try:
         r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
         if r.status_code == 200:
-            with open(".\\Images\\" + myPatreonAuthor + "\\" + myImageName, 'wb') as f:
+            with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
                 for chunk in r:
                     f.write(chunk)
         else:
@@ -84,8 +92,8 @@ def downloadImages(url, urlCounter):
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
         return
     else:
-        if not os.path.isdir(".\\Images\\" + patreonAuthor + "\\"):
-            os.mkdir(".\\Images\\" + patreonAuthor + "\\")
+        if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + patreonAuthor + ""+ dirSep +""):
+            os.mkdir("."+ dirSep +"Images"+ dirSep +"" + patreonAuthor + ""+ dirSep +"")
     
     #Gets the page and converts/reads it.
     response = requests.get(url, headers = {'User-Agent': userAgent})
