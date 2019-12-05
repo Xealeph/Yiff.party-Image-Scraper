@@ -18,6 +18,11 @@ python yiff_image_scraper.py firstLink secondLink ...
 Replace <b><i>firstLink</i></b>, <b><i>secondLink</i></b>, <b><i>...</b></i> with your own Links.<br>
 Note that every Link after the first one ist optional.
 
+There is also an additional script ('duplicate_remover.py'), which removes all files with the same md5-hash.
+```
+python duplicate_remover.py
+```
+
 ### Example
 ```
 python yiff_image_scraper.py https://yiff.party/patreon/42
