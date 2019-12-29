@@ -7,9 +7,11 @@ import platform
 amountOfLinks = len(sys.argv)-1
 urlCounter = 0
 urlList = []
+missingFiles = []
 userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
 dirSep = ""
 system = platform.system()
+cLastPageFlag = False
 
 if(system == 'Windows'):
     dirSep = "\\"
@@ -22,14 +24,39 @@ print("\n======Starting Scraper========")
 if amountOfLinks <= 0:
     print("\nPlease enter at least 1 link as argument.\ne.g. https://yiff.party/patreon/1\n")
     print("============0/0===============\n")
-    quit()
+    sys.exit()
 for n in range(amountOfLinks):
     urlList.append(sys.argv[n+1])
+
+try:
+    startPage = int(sys.argv[1])-1
+    urlList.pop(0)
+    amountOfLinks -= 1
+except:
+    startPage = 0
+
+try:
+    cLastPage = int(sys.argv[2])
+    cLastPageFlag = True
+    urlList.pop(0)
+    amountOfLinks -= 1
+    if cLastPage < startPage:
+        sys.exit()
+except SystemExit:
+    sys.exit("Please choose a lower starting page. Your current pagenumbers are: Starting Page: " + (startPage) + ", Last Page: " + str(cLastPage))
+except:
+    pass
 
 #Creates Image Directory
 if not os.path.isdir("."+ dirSep +"Images"+ dirSep +""):
     os.mkdir("."+ dirSep +"Images"+ dirSep +"")
 
+
+def getFlag():
+    return cLastPageFlag
+
+def setFlag(boolean):
+    cLastPageFlag = boolean
 
 def accountForDuplicates(aDict):
     counter = 0
@@ -74,6 +101,7 @@ def downloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to downl
             print("beep -- file skipped: " + myUrl)
     except:
         print("Skipped " + myUrl)
+        missingFiles.append(myUrl)
         return
 
 
@@ -104,17 +132,27 @@ def downloadImages(url, urlCounter):
     #searches for the highest page number
     lastPage = soup.find_all('a', {'class':'btn pag-btn'})
     
+
     try: 
         lastPage = int(lastPage[1]["data-pag"])
         #print(lastPage)
-        for i in range(0, lastPage):
+        cLPFlag = getFlag()
+        if cLPFlag:
+            if cLastPage > lastPage:
+                sys.exit()
+            lastPage = cLastPage
+            setFlag(False)
+        for i in range(startPage, lastPage):
             imgContainerUrls.append(newUrl + str(i+1)) #appends the page number to the url
+    except SystemExit:
+        sys.exit("Last Page Number is too high. Please choose a number lower or equal than: " + str(lastPage))
     except:
         lastPage = 1
         imgContainerUrls.append(newUrl + str(1))
     #print(imgContainerUrls)
     
     for containerUrl in imgContainerUrls:
+        #print(containerUrl)
         response = requests.get(containerUrl, headers = {'User-Agent': userAgent})
         soup = bs(response.text, "html.parser")
 
@@ -128,10 +166,12 @@ def downloadImages(url, urlCounter):
         try:
             containers[0]
         except IndexError:
-            print("\nCould not find Images. The cause might be a invalid url or there just aren't any Images")
-            print("Skipping url: " + url + "\n")
-            print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
-            return
+            page = containerUrl.split("p=")[1]
+            print("\nCould not find Images. The cause might be a invalid url or there just aren't any Images.")
+            missingFiles.append("Page " + page + " was skipped. You can retry scraping this page with: python " + sys.argv[0] + " " + page + " " + page + " urls")
+            #print("Skipping url: " + url + "\n")
+            #print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
+            continue
  
         containerCounter1 = len(containersPart1) #amount of containers with class 'card-action'
         containerCounter2 = len(containersPart2) #amount of containers with class 'post-body'
@@ -161,32 +201,38 @@ def downloadImages(url, urlCounter):
 
             linkList.append(shortLink)
 
-        linkList = makeConformUrl(sorted(linkList))
-        linkList = list(dict.fromkeys(linkList))
+    linkList = makeConformUrl(sorted(linkList))
+    linkList = list(dict.fromkeys(linkList))
 
-        for h in range(0, len(linkList)-1):
-            updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
-            imageNameDict.update(updatedValue)
+    for h in range(0, len(linkList)-1):
+        updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
+        imageNameDict.update(updatedValue)
 
-        imageNameDict = accountForDuplicates(imageNameDict)
+    imageNameDict = accountForDuplicates(imageNameDict)
+    #print(len(linkList))
+    #print(imageNameDict)
+    #print(imageCounter)
+    #print('\n'.join(map(str, sorted(linkList))))
 
-        #print(imageNameDict)
-        #print(imageCounter)
-        #print('\n'.join(map(str, sorted(linkList))))
-
-        #Loops through the Image Urls amd downloads them.
-        for i in range(len(linkList)-1):
-
-            imageName = imageNameDict[str(i)]
-            urlI = linkList[i]
-
-            print("Downloading " + imageName)           #Shows the name of the current downloading image
-            downloader(urlI, imageName, patreonAuthor)
-            imageCounter += 1
+    #Loops through the Image Urls amd downloads them.
+    for i in range(len(linkList)-1):
+        imageName = imageNameDict[str(i)]
+        urlI = linkList[i]
+        print("Downloading " + imageName)           #Shows the name of the current downloading image
+        downloader(urlI, imageName, patreonAuthor)
+        imageCounter += 1
 
     #Just a finishing message.
-    print("\nSuccessfully downloaded " + str(imageCounter) + " Images/Files!\n")
-    print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
+    if imageCounter == 0:
+        print("No files downloaded. Maybe there are no files or you messed up the order of the arguments: python " + sys.argv[0] + " [start page] [last page] urls")
+    else:
+        print("\nSuccessfully downloaded " + str(imageCounter) + " Images/Files!\n")
+        print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
+
+    f = open("SkippedLinks.txt", "w+")
+    for files in missingFiles:
+        f.write(files + "\n")
+    f.close()
 
 
 #Loops through all Yiff.party-Urls and downloads the images.
