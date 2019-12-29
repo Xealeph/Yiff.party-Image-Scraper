@@ -141,7 +141,10 @@ def downloadImages(url, urlCounter):
             if cLastPage > lastPage:
                 sys.exit()
             lastPage = cLastPage
+            startPage = startPage
             setFlag(False)
+        else:
+            startPage = 0
         for i in range(startPage, lastPage):
             imgContainerUrls.append(newUrl + str(i+1)) #appends the page number to the url
     except SystemExit:
