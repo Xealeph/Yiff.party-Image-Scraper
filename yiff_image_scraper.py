@@ -6,6 +6,7 @@ import platform
 
 amountOfLinks = len(sys.argv)-1
 urlCounter = 0
+imageCounter = 0
 urlList = []
 missingFiles = []
 userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
@@ -91,16 +92,18 @@ def makeConformUrl(aList):
 
 
 def downloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to download the images - in the case of the site not accepting anymore requests
+    global imageCounter
     try:
         r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
         if r.status_code == 200:
             with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
                 for chunk in r:
                     f.write(chunk)
+            imageCounter += 1
         else:
             print("beep -- file skipped: " + myUrl)
     except:
-        print("Skipped " + myUrl)
+        print("Skipped: " + myUrl)
         missingFiles.append(myUrl)
         return
 
@@ -109,6 +112,7 @@ def downloadImages(url, urlCounter):
     imageNameDict = {}
     linkList = []
     imgContainerUrls = []
+    global imageCounter
     imageCounter = 0
 
     #Gets the Patreon Author's number. Fails if link is shorter than https://yiff.party/patreon/1.
@@ -223,7 +227,6 @@ def downloadImages(url, urlCounter):
         urlI = linkList[i]
         print("Downloading " + imageName)           #Shows the name of the current downloading image
         downloader(urlI, imageName, patreonAuthor)
-        imageCounter += 1
 
     #Just a finishing message.
     if imageCounter == 0:
