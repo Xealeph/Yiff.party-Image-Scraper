@@ -13,12 +13,14 @@ You will also need Python 3.7.3. (At least that is the version I'm using. Lower 
 
 ### Usage
 ```
-python yiff_image_scraper.py [start page] [last page] firstLink secondLink ...
+python yiff_image_scraper.py [start page] [last page] [-folders] firstLink secondLink ...
 ```
 Replace <b>firstLink</b>, <b>secondLink</b>, <b>...</b> with your own Links.<br>
 Note that every Link after the first one ist optional.
 
 Optional: You can choose at what page the scraper should start and end (Only for the first link!).
+
+Optional: If "-folders" is present, files will be placed in subfolders according to their original Patreon post.
 
 If any links are skipped you can/should find them in <b>SkippedFiles.txt</b>.
 
