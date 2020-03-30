@@ -50,7 +50,7 @@ except:
 
 # Check the third slot in the arguments for the "-folders" flag. If present, pop, decrement amountOfLinks, and set useFolders flag
 try:
-    if (sys.argv[3] == '-folders'):
+    if (sys.argv[1] == '-folders') or (sys.argv[2] == '-folders') or (sys.argv[3] == '-folders'):
         print("Sub folders will be created.")
         useFolders = True
         urlList.pop(0)
