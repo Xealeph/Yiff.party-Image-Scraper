@@ -233,8 +233,8 @@ def downloadImages(url, urlCounter):
     #falls back on the post # provided by yiff.party if no appropriate title+date can be found
     for h in range(0, len(linkList)-1):
         # Grab the post number (this is yiff.party's numbering, not patreon's)
-        postNumber = {str(h):str(linkList[h].split("/")[5])}
-        postNumberDict.update(postNumber)
+        #postNumber = {str(h):str(linkList[h].split("/")[5])}
+        #postNumberDict.update(postNumber)
     
         #Find the location in the soup where the URL in question is located
         location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
@@ -253,7 +253,7 @@ def downloadImages(url, urlCounter):
     #Loops through the Image Urls amd downloads them.
     for i in range(len(linkList)-1):
         imageName = imageNameDict[str(i)]
-        imagePostNumber = postNumberDict[str(i)]
+        #imagePostNumber = postNumberDict[str(i)]
         imagePostDate = postDateDict[str(i)]
         imagePostTitle = postTitleDict[str(i)]
         postFolderName = imagePostDate + " " + imagePostTitle
