@@ -59,6 +59,13 @@ def getFlag():
 def setFlag(boolean):
     cLastPageFlag = boolean
 
+def sanitiseFolderName(rawFolderName):
+    #First remove all characters that are not alphanumerics or in this list: _- #!(),.
+    cleanedFolderName = "".join(x for x in rawFolderName if(x.isalnum() or x in "_- #!(),."))
+    #Then let's remove any preceding or trailing spaces or periods
+    cleanedFolderName = cleanedFolderName.strip(' .')
+    return cleanedFolderName
+
 def accountForDuplicates(aDict):
     counter = 0
     bList = [] 
@@ -228,8 +235,8 @@ def downloadImages(url, urlCounter):
     #print('\n'.join(map(str, sorted(linkList))))
     
     allSoup = bs(potOfAllSoup, "html.parser")
-    #Fetches appropriate post date and post title for each URL in link list
-    #falls back on the post # provided by yiff.party if no appropriate title+date can be found
+    #Fetches appropriate DATE and TITLE for each URL in link list via Beautiful Soup
+    #falls back on the post number provided by yiff.party if no appropriate title+date can be found
     for h in range(0, len(linkList)-1):
         # Grab the post number (this is yiff.party's numbering, not patreon's)
         postNumber = {str(h):str(linkList[h].split("/")[5])}
@@ -237,6 +244,7 @@ def downloadImages(url, urlCounter):
         try:
             #Find the location in the soup where the URL in question is located
             location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
+            
             #Search for the part of the post immediately above it that is a span with the 'post-time' class
             timeStamp = location.find_previous("span","grey-text post-time").contents
             trimmedTimeStamp = ''.join(timeStamp).split("T")[0]
@@ -244,9 +252,10 @@ def downloadImages(url, urlCounter):
             #Search for the part of the post immediately above it that is a span with the 'card-title activator grey-text text-darken-4' class
             postName = location.find_previous("span","card-title activator grey-text text-darken-4").contents
             #Split out the post title and Remove any characters that would be illegal file names
-            CleanedPostName = ''.join(postName[0]).replace("<","-").replace(">","-").replace(":","-").replace("|","-").replace("?","-").replace("*","-").strip()
+            CleanedPostName = sanitiseFolderName(''.join(postName[0]))
             
             dateTitle = {str(h):(trimmedTimeStamp + " " + CleanedPostName)}
+            
         #If we can't find a nice post name and date for whatever reason, fail to using the yiff-provided post number
         except:
             dateTitle = postNumber
