@@ -112,8 +112,7 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
 
 def downloadImages(url, urlCounter):
     imageNameDict = {}
-    postDateDict = {}
-    postTitleDict = {}
+    postDateTitleDict = {}
     postNumberDict = {}
     linkList = []
     imgContainerUrls = []
@@ -233,30 +232,32 @@ def downloadImages(url, urlCounter):
     #falls back on the post # provided by yiff.party if no appropriate title+date can be found
     for h in range(0, len(linkList)-1):
         # Grab the post number (this is yiff.party's numbering, not patreon's)
-        #postNumber = {str(h):str(linkList[h].split("/")[5])}
-        #postNumberDict.update(postNumber)
-    
-        #Find the location in the soup where the URL in question is located
-        location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
-        #Search for the part of the post immediately above it that is a span with the 'post-time' class
-        timeStamp = location.find_previous("span","grey-text post-time").contents
-        trimmedTimeStamp = ''.join(timeStamp).split("T")[0]
-        trimmedTimeStamp = {str(h):trimmedTimeStamp}
-        postDateDict.update(trimmedTimeStamp)
-        #Search for the part of the post immediately above it that is a span with the 'card-title activator grey-text text-darken-4' class
-        postName = location.find_previous("span","card-title activator grey-text text-darken-4").contents
-        #Split out the post title and Remove any characters that would be illegal file names
-        CleanedPostName = ''.join(postName[0]).replace("<","-").replace(">","-").replace(":","-").replace("|","-").replace("?","-").replace("*","-").strip()
-        CleanedPostName = {str(h):CleanedPostName}
-        postTitleDict.update(CleanedPostName)
+        postNumber = {str(h):str(linkList[h].split("/")[5])}
+        
+        try:
+            #Find the location in the soup where the URL in question is located
+            location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
+            #Search for the part of the post immediately above it that is a span with the 'post-time' class
+            timeStamp = location.find_previous("span","grey-text post-times").contents
+            trimmedTimeStamp = ''.join(timeStamp).split("T")[0]
+            
+            #Search for the part of the post immediately above it that is a span with the 'card-title activator grey-text text-darken-4' class
+            postName = location.find_previous("span","card-title activator grey-text text-darken-4").contents
+            #Split out the post title and Remove any characters that would be illegal file names
+            CleanedPostName = ''.join(postName[0]).replace("<","-").replace(">","-").replace(":","-").replace("|","-").replace("?","-").replace("*","-").strip()
+            
+            dateTitle = {str(h):(trimmedTimeStamp + " " + CleanedPostName)}
+        #If we can't find a nice post name and date for whatever reason, fail to using the yiff-provided post number
+        except:
+            dateTitle = postNumber
 
-    #Loops through the Image Urls amd downloads them.
+        postDateTitleDict.update(dateTitle)
+
+    #Loops through the Image Urls and downloads them.
     for i in range(len(linkList)-1):
         imageName = imageNameDict[str(i)]
         #imagePostNumber = postNumberDict[str(i)]
-        imagePostDate = postDateDict[str(i)]
-        imagePostTitle = postTitleDict[str(i)]
-        postFolderName = imagePostDate + " " + imagePostTitle
+        postFolderName = postDateTitleDict[str(i)]
         urlI = linkList[i]
         print("Downloading " + imageName)           #Shows the name of the current downloading image
         downloader(urlI, imageName, patreonAuthor, postFolderName)
