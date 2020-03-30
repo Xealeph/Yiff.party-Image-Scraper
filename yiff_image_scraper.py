@@ -60,10 +60,13 @@ def setFlag(boolean):
     cLastPageFlag = boolean
 
 def sanitiseFolderName(rawFolderName):
-    #First remove all characters that are not alphanumerics or in this list: _- #!(),.
-    cleanedFolderName = "".join(x for x in rawFolderName if(x.isalnum() or x in "_- #!(),."))
-    #Then let's remove any preceding or trailing spaces or periods
-    cleanedFolderName = cleanedFolderName.strip(' .')
+    #First remove all characters that are not alphanumerics or in this list: _- #!(),.$+
+    cleanedFolderName = "".join(x for x in rawFolderName if(x.isalnum() or x in "_- #!(),.$+"))
+    #Then let's remove any preceding or trailing spaces, periods, commas
+    cleanedFolderName = cleanedFolderName.strip(' .,')
+    #If those steps have trimmed the name down to no characters, add a placeholder
+    if (len(cleanFolderName) < 1):
+        cleanedFolderName = "NA" + cleanFolderName
     return cleanedFolderName
 
 def accountForDuplicates(aDict):
