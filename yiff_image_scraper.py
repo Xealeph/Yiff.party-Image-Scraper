@@ -238,7 +238,7 @@ def downloadImages(url, urlCounter):
             #Find the location in the soup where the URL in question is located
             location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
             #Search for the part of the post immediately above it that is a span with the 'post-time' class
-            timeStamp = location.find_previous("span","grey-text post-times").contents
+            timeStamp = location.find_previous("span","grey-text post-time").contents
             trimmedTimeStamp = ''.join(timeStamp).split("T")[0]
             
             #Search for the part of the post immediately above it that is a span with the 'card-title activator grey-text text-darken-4' class
