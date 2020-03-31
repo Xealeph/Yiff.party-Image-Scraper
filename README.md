@@ -16,7 +16,7 @@ You will also need Python 3.7.3. (At least that is the version I'm using. Lower 
 python yiff_image_scraper.py [start page] [last page] [-folders] firstLink secondLink ...
 ```
 Replace <b>firstLink</b>, <b>secondLink</b>, <b>...</b> with your own Links.<br>
-Note that every Link after the first one ist optional.
+Note that every Link after the first one is optional.
 
 Optional: You can choose at what page the scraper should start and end (Only for the first link!).
 
