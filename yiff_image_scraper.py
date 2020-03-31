@@ -132,9 +132,9 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
                         f.write(chunk)
             imageCounter += 1
         else:
-            print("Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
+            print(">Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
     except:
-        print("Skipped (Other Error): " + myUrl)
+        print(">Skipped (Other Error): " + myUrl)
         missingFiles.append(myUrl)
         return
 
