@@ -48,10 +48,10 @@ except SystemExit:
 except:
     pass
 
-# Check the third slot in the arguments for the "-folders" flag. If present, pop, decrement amountOfLinks, and set useFolders flag
+# Check the arguments for the "-folders" flag. If present, pop urlList, decrement amountOfLinks, and set useFolders flag
 try:
     if (sys.argv[1] == '-folders') or (sys.argv[2] == '-folders') or (sys.argv[3] == '-folders'):
-        print("Sub folders will be created.")
+        print("Sub folders will be created.\n")
         useFolders = True
         urlList.pop(0)
         amountOfLinks -= 1
@@ -116,7 +116,7 @@ def makeConformUrl(aList):
 def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
     global imageCounter
     try:
-        r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
+        r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(3,6), stream=True)
         if r.status_code == 200:
             #If we were passed a valid folder name, use it to make a folder for the post
             if (postFolderName != False):
@@ -132,9 +132,9 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
                         f.write(chunk)
             imageCounter += 1
         else:
-            print("beep -- file skipped: " + myUrl)
+            print("Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
     except:
-        print("Skipped: " + myUrl)
+        print("Skipped (Other Error): " + myUrl)
         missingFiles.append(myUrl)
         return
 
