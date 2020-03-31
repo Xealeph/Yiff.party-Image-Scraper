@@ -48,6 +48,18 @@ except SystemExit:
 except:
     pass
 
+# Check the arguments for the "-folders" flag. If present, pop urlList, decrement amountOfLinks, and set useFolders flag
+try:
+    if (sys.argv[1] == '-folders') or (sys.argv[2] == '-folders') or (sys.argv[3] == '-folders'):
+        print("Sub folders will be created.\n")
+        useFolders = True
+        urlList.pop(0)
+        amountOfLinks -= 1
+    else:
+        useFolders = False
+except:
+    useFolders = False
+
 #Creates Image Directory
 if not os.path.isdir("."+ dirSep +"Images"+ dirSep +""):
     os.mkdir("."+ dirSep +"Images"+ dirSep +"")
@@ -58,6 +70,16 @@ def getFlag():
 
 def setFlag(boolean):
     cLastPageFlag = boolean
+
+def sanitiseFolderName(rawFolderName):
+    #First remove all characters that are not alphanumerics or in this list: '_- #!(),.$+
+    cleanedFolderName = "".join(x for x in rawFolderName if(x.isalnum() or x in "'_- #!(),.$+"))
+    #Then let's remove any preceding or trailing spaces, periods, commas
+    cleanedFolderName = cleanedFolderName.strip(' .,')
+    #If those steps have trimmed the name down to no characters, add a placeholder
+    if (len(cleanedFolderName) < 1):
+        cleanedFolderName = "NA" + cleanFolderName
+    return cleanedFolderName
 
 def accountForDuplicates(aDict):
     counter = 0
@@ -91,25 +113,36 @@ def makeConformUrl(aList):
     return aList
 
 
-def downloader(myUrl, myImageName, myPatreonAuthor): #recursively tries to download the images - in the case of the site not accepting anymore requests
+def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
     global imageCounter
     try:
-        r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(2,5), stream=True)
+        r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(3,6), stream=True)
         if r.status_code == 200:
-            with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
-                for chunk in r:
-                    f.write(chunk)
+            #If we were passed a valid folder name, use it to make a folder for the post
+            if (postFolderName != False):
+                if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +""):
+                    os.mkdir("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"")
+                with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName, 'wb') as f:
+                    for chunk in r:
+                        f.write(chunk)
+            #IF we were passed 'FALSE' instead of a folder name, do not create a folder, but simply save in Author page
+            else:
+                with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
+                    for chunk in r:
+                        f.write(chunk)
             imageCounter += 1
         else:
-            print("beep -- file skipped: " + myUrl)
+            print(">Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
     except:
-        print("Skipped: " + myUrl)
+        print(">Skipped (Other Error): " + myUrl)
         missingFiles.append(myUrl)
         return
 
 
-def downloadImages(url, urlCounter):
+def downloadImages(url, urlCounter, useFolders):
     imageNameDict = {}
+    postDateTitleDict = {}
+    postNumberDict = {}
     linkList = []
     imgContainerUrls = []
     global imageCounter
@@ -158,10 +191,12 @@ def downloadImages(url, urlCounter):
         imgContainerUrls.append(newUrl + str(1))
     #print(imgContainerUrls)
     
+    potOfAllSoup = ""
     for containerUrl in imgContainerUrls:
         #print(containerUrl)
         response = requests.get(containerUrl, headers = {'User-Agent': userAgent})
         soup = bs(response.text, "html.parser")
+        potOfAllSoup = potOfAllSoup + response.text
 
         containersPart1 = soup.find_all('div', {'class': 'card-action'})
         containersPart2 = soup.find_all('div', {'class': 'post-body'})
@@ -221,12 +256,48 @@ def downloadImages(url, urlCounter):
     #print(imageCounter)
     #print('\n'.join(map(str, sorted(linkList))))
 
-    #Loops through the Image Urls amd downloads them.
+    if useFolders:
+        #Fetches appropriate DATE and TITLE for each URL in link list via Beautiful Soup
+        #falls back on the post number provided by yiff.party if no appropriate title+date can be found
+        allSoup = bs(potOfAllSoup, "html.parser")
+        for h in range(0, len(linkList)-1):
+            # Grab the post number (this is yiff.party's numbering, not patreon's)
+            # May fail if the URL is not a media URL, in that case use the current loop number- this URL will likely get skipped
+            try:
+                postNumber = {str(h):str(linkList[h].split("/")[5])}
+            except:
+                postNumber = {str(h):str(h).zfill(8)}
+            
+            try:
+                #Find the location in the soup where the URL in question is located
+                location = allSoup.find("a",href=linkList[h].replace("https://yiff.party",""))
+                #Search for the part of the post immediately above it that is a span with the 'post-time' class
+                timeStamp = location.find_previous("span","grey-text post-time").contents
+                trimmedTimeStamp = ''.join(timeStamp).split("T")[0]
+                
+                #Search for the part of the post immediately above it that is a span with the 'card-title activator grey-text text-darken-4' class
+                postName = location.find_previous("span","card-title activator grey-text text-darken-4").contents
+                #Split out the post title and Remove any characters that would be illegal file names
+                CleanedPostName = sanitiseFolderName(''.join(postName[0]))
+                
+                dateTitle = {str(h):(trimmedTimeStamp + " " + CleanedPostName)}
+            #If we can't find a nice post name and date for whatever reason, fail to using the yiff-provided post number
+            except:
+                dateTitle = postNumber
+
+            postDateTitleDict.update(dateTitle)
+
+    #Loops through the Image Urls and downloads them.
     for i in range(len(linkList)-1):
+        if useFolders:
+            postFolderName = postDateTitleDict[str(i)]
+        else:
+            postFolderName = False
+        
         imageName = imageNameDict[str(i)]
         urlI = linkList[i]
         print("Downloading " + imageName)           #Shows the name of the current downloading image
-        downloader(urlI, imageName, patreonAuthor)
+        downloader(urlI, imageName, patreonAuthor, postFolderName)
 
     #Just a finishing message.
     if imageCounter == 0:
@@ -244,4 +315,4 @@ def downloadImages(url, urlCounter):
 #Loops through all Yiff.party-Urls and downloads the images.
 for url in urlList:
     urlCounter += 1
-    downloadImages(url, urlCounter)
+    downloadImages(url, urlCounter, useFolders)
