@@ -291,7 +291,7 @@ def downloadImages(url, urlCounter, useFolders):
 
             postDateTitleDict.update(dateTitle)
 
-    print("Starting download of " + len(linkList) + "items.")
+    print("Starting download of " + str(len(linkList)) + "items.")
     #Loops through the Image Urls and downloads them.
     for i in range(len(linkList)-1):
         if useFolders:
