@@ -136,7 +136,10 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
             print(">Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
     except:
         print(">Skipped (Other Error): " + myUrl)
-        missingFiles.append(myUrl)
+        if postFolderName:
+            missingFiles.append(myUrl + ' ' + postFolderName)
+        else:
+            missingFiles.append(myUrl)
         return
 
 
