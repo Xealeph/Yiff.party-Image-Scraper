@@ -21,11 +21,6 @@ else:
 
 print("\n======Starting Scraper========")
 
-#Checks if there are links present and puts then in a list if they are
-if amountOfLinks <= 0:
-    print("\nPlease enter at least 1 link as argument.\ne.g. https://yiff.party/patreon/1\n")
-    print("============0/0===============\n")
-    sys.exit()
 for n in range(amountOfLinks):
     urlList.append(sys.argv[n+1])
 
@@ -48,17 +43,23 @@ except SystemExit:
 except:
     pass
 
-# Check the arguments for the "-folders" flag. If present, pop urlList, decrement amountOfLinks, and set useFolders flag
+# Check the arguments for the "-folders" flag. If present, remove it, decrement amountOfLinks, and set useFolders flag
 try:
-    if (sys.argv[1] == '-folders') or (sys.argv[2] == '-folders') or (sys.argv[3] == '-folders'):
+    if ('-folders' in urlList):
         print("Sub folders will be created.\n")
         useFolders = True
-        urlList.pop(0)
+        urlList.remove('-folders')
         amountOfLinks -= 1
     else:
         useFolders = False
 except:
     useFolders = False
+
+#Checks if there are any links present
+if amountOfLinks <= 0:
+    print("\nPlease enter at least 1 link as argument.\ne.g. https://yiff.party/patreon/1\n")
+    print("============0/0===============\n")
+    sys.exit()
 
 #Creates Image Directory
 if not os.path.isdir("."+ dirSep +"Images"+ dirSep +""):
@@ -135,7 +136,10 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
             print(">Skipped (Bad Response: " + str(r.status_code) + "): " + myUrl)
     except:
         print(">Skipped (Other Error): " + myUrl)
-        missingFiles.append(myUrl)
+        if postFolderName:
+            missingFiles.append(myUrl + ' ' + postFolderName)
+        else:
+            missingFiles.append(myUrl)
         return
 
 
@@ -287,6 +291,7 @@ def downloadImages(url, urlCounter, useFolders):
 
             postDateTitleDict.update(dateTitle)
 
+    print("Starting download of " + str(len(linkList)) + " items.")
     #Loops through the Image Urls and downloads them.
     for i in range(len(linkList)-1):
         if useFolders:
