@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup as bs
 import requests
 import sys
 import os
-import platform
+import platform as pf
 
 amountOfLinks = len(sys.argv)-1
 urlCounter = 0
@@ -12,7 +12,7 @@ urlList = []
 missingFiles = []
 userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
 dirSep = ""
-system = platform.system()
+system = pf.system()
 cLastPageFlag = False
 
 if(system == 'Windows'):
@@ -80,7 +80,7 @@ def sanitiseFolderName(rawFolderName):
     cleanedFolderName = cleanedFolderName.strip(' .,')
     #If those steps have trimmed the name down to no characters, add a placeholder
     if (len(cleanedFolderName) < 1):
-        cleanedFolderName = "NA" + cleanFolderName
+        cleanedFolderName = "NA" #+ cleanFolderName  <- This seems unnecessary 
     return cleanedFolderName
 
 def accountForDuplicates(aDict):
@@ -115,7 +115,7 @@ def makeConformUrl(aList):
     return aList
 
 
-def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
+def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
     global imageCounter
     global skippedCounter
     try:
@@ -124,11 +124,11 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
             #If we were passed a valid folder name, use it to make a folder for the post
             if (postFolderName != False):
                 # If the folder does not already exist, make it!
-                if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +""):
-                    os.mkdir("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"")
+                if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +""):
+                    os.mkdir("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"")
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName):
-                    with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName, 'wb') as f:
+                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName):
+                    with open("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -138,8 +138,8 @@ def downloader(myUrl, myImageName, myPatreonAuthor, postFolderName): #recursivel
             #IF we were passed 'FALSE' instead of a folder name, do not create a folder, but simply save in Author page
             else:
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName):
-                    with open("."+ dirSep +"Images"+ dirSep +"" + myPatreonAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
+                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +"" + myImageName):
+                    with open("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -165,23 +165,24 @@ def downloadImages(url, urlCounter, useFolders):
     global imageCounter
     imageCounter = 0
 
-    #Gets the Patreon Author's number. Fails if link is shorter than https://yiff.party/patreon/1.
+    #Gets the Gallery Author's number. Fails if link is shorter than https://yiff.party/patreon/1.
     #Also Creates a directory for the images.
     try:    
-        patreonAuthor = url.split("/")[4]
+        galleryAuthor = url.split("/")[4]
+        platform = url.split("/")[3]
     except IndexError:
         print("\nThe given url might not be valid.\nSkipping url: " + url + "\n")
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
         return
     else:
-        if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + patreonAuthor + ""+ dirSep +""):
-            os.mkdir("."+ dirSep +"Images"+ dirSep +"" + patreonAuthor + ""+ dirSep +"")
+        if not os.path.isdir("." + dirSep + "Images" + dirSep + "" + galleryAuthor + "" + dirSep + ""):
+            os.mkdir("." + dirSep + "Images" + dirSep + "" + galleryAuthor + "" + dirSep + "")
     
     #Gets the page and converts/reads it.
     response = requests.get(url, headers = {'User-Agent': userAgent})
     soup = bs(response.text, "html.parser")
 
-    newUrl = "https://yiff.party/render_posts?s=patreon&c=" + patreonAuthor + "&p="
+    newUrl = "https://yiff.party/render_posts?s=" + platform + "&c=" + galleryAuthor + "&p="
 
     #searches for the highest page number
     lastPage = soup.find_all('a', {'class':'btn pag-btn'})
@@ -217,9 +218,10 @@ def downloadImages(url, urlCounter, useFolders):
 
         containersPart1 = soup.find_all('div', {'class': 'card-action'})
         containersPart2 = soup.find_all('div', {'class': 'post-body'})
-        containersPart3 = soup.find_all('div', {'class': 'card-attachments'})
+        containersPart3 = soup.find_all('img', {'class': 'lazyload'})
+        containersPart4 = soup.find_all('div', {'class': 'card-attachments'})
 
-        containers = containersPart1 + containersPart2 + containersPart3
+        containers = containersPart1 + containersPart2 + containersPart3 + containersPart4
 
         #Checks if there are any images and returns an error if not. Also skips the url.
         try:
@@ -234,6 +236,7 @@ def downloadImages(url, urlCounter, useFolders):
  
         containerCounter1 = len(containersPart1) #amount of containers with class 'card-action'
         containerCounter2 = len(containersPart2) #amount of containers with class 'post-body'
+        containerCounter3 = len(containersPart3) #amount of containers with class 'lazyload'
         i = 0 
  
         #Searches for Image-Boxes.
@@ -247,6 +250,12 @@ def downloadImages(url, urlCounter, useFolders):
             elif i <= containerCounter2 and i > containerCounter1:
                 try:
                     shortLink = container.p.a['href']
+                except:
+                    continue
+            elif i <= containerCounter3 and i > containerCounter2:
+                try:
+                    shortLink = container['data-src'].split("&w=")[0]
+                    shortLink = "https://" + shortLink.split("ssl:")[1]
                 except:
                     continue
             else:
@@ -268,10 +277,12 @@ def downloadImages(url, urlCounter, useFolders):
         imageNameDict.update(updatedValue)
 
     imageNameDict = accountForDuplicates(imageNameDict)
+
     #print(len(linkList))
     #print(imageNameDict)
     #print(imageCounter)
     #print('\n'.join(map(str, sorted(linkList))))
+    #quit()
 
     if useFolders:
         #Fetches appropriate DATE and TITLE for each URL in link list via Beautiful Soup
@@ -315,7 +326,7 @@ def downloadImages(url, urlCounter, useFolders):
         imageName = imageNameDict[str(i)]
         urlI = linkList[i]
         print("Downloading " + imageName)           #Shows the name of the current downloading image
-        downloader(urlI, imageName, patreonAuthor, postFolderName)
+        downloader(urlI, imageName, galleryAuthor, postFolderName)
 
     #Just a finishing message.
     if (imageCounter == 0) and (skippedCounter == 0):
