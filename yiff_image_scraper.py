@@ -124,11 +124,11 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
             #If we were passed a valid folder name, use it to make a folder for the post
             if (postFolderName != False):
                 # If the folder does not already exist, make it!
-                if not os.path.isdir("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +""):
-                    os.mkdir("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"")
+                if not os.path.isdir("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName + dirSep + ""):
+                    os.mkdir("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + "")
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName):
-                    with open("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +""+ postFolderName+ ""+ dirSep +"" + myImageName, 'wb') as f:
+                if not os.path.isfile("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName):
+                    with open("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -138,8 +138,8 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
             #IF we were passed 'FALSE' instead of a folder name, do not create a folder, but simply save in Author page
             else:
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +"" + myImageName):
-                    with open("."+ dirSep +"Images"+ dirSep +"" + myGalleryAuthor + ""+ dirSep +"" + myImageName, 'wb') as f:
+                if not os.path.isfile("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName):
+                    with open("."+ dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -155,6 +155,17 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
         missingFiles.append(myUrl)
         return
 
+#short function to get the video link from a link with embedded video like https://yiff.party/vimeo/1
+#def getEmbeddedVideos(url): #Only tested with Vimeo Videos so far and also not working
+#    print("embed found with url " + url) 
+#    url = "https://yiff.party/vimeo_embed?v=" + str(url).split("/")[-1]
+#    response = requests.get(url, headers = {'User-Agent': userAgent})
+#    print("response")
+#    soup = bs(response.text, "html.parser")
+#    print("parsing")
+#    link = soup.find('div', {'class':'vp-telecine invisible'}).video['scr']
+#    print("found " + link)
+#    return link
 
 def downloadImages(url, urlCounter, useFolders):
     imageNameDict = {}
@@ -162,6 +173,7 @@ def downloadImages(url, urlCounter, useFolders):
     postNumberDict = {}
     linkList = []
     imgContainerUrls = []
+    embeddedVideos = []
     global imageCounter
     imageCounter = 0
 
@@ -175,8 +187,8 @@ def downloadImages(url, urlCounter, useFolders):
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
         return
     else:
-        if not os.path.isdir("." + dirSep + "Images" + dirSep + "" + galleryAuthor + "" + dirSep + ""):
-            os.mkdir("." + dirSep + "Images" + dirSep + "" + galleryAuthor + "" + dirSep + "")
+        if not os.path.isdir("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep):
+            os.mkdir("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep)
     
     #Gets the page and converts/reads it.
     response = requests.get(url, headers = {'User-Agent': userAgent})
@@ -219,9 +231,12 @@ def downloadImages(url, urlCounter, useFolders):
         containersPart1 = soup.find_all('div', {'class': 'card-action'})
         containersPart2 = soup.find_all('div', {'class': 'post-body'})
         containersPart3 = soup.find_all('img', {'class': 'lazyload'})
-        containersPart4 = soup.find_all('div', {'class': 'card-attachments'})
+        containersPart4 = soup.find_all('p', {'class': 'yp-vimeo-proxy-embed'})
+        containersPart5 = soup.find_all('div', {'class': 'card-attachments'})
 
-        containers = containersPart1 + containersPart2 + containersPart3 + containersPart4
+        #print(containersPart4)
+
+        containers = containersPart1 + containersPart2 + containersPart3 + containersPart4 + containersPart5
 
         #Checks if there are any images and returns an error if not. Also skips the url.
         try:
@@ -237,10 +252,13 @@ def downloadImages(url, urlCounter, useFolders):
         containerCounter1 = len(containersPart1) #amount of containers with class 'card-action'
         containerCounter2 = len(containersPart2) #amount of containers with class 'post-body'
         containerCounter3 = len(containersPart3) #amount of containers with class 'lazyload'
+        containerCounter4 = len(containersPart4) #amount of containers with class 'card-embed'
         i = 0 
- 
+        
+
         #Searches for Image-Boxes.
         for container in containers:
+            shortLink = ""
             i += 1
             if i <= containerCounter1:
                 try:
@@ -249,13 +267,20 @@ def downloadImages(url, urlCounter, useFolders):
                     continue
             elif i <= containerCounter2 and i > containerCounter1:
                 try:
-                    shortLink = container.p.a['href']
+                    subContainer = container.find_all('a')
+                    for subCont in subContainer:
+                        linkList.append(subCont['href'])
                 except:
                     continue
             elif i <= containerCounter3 and i > containerCounter2:
                 try:
                     shortLink = container['data-src'].split("&w=")[0]
                     shortLink = "https://" + shortLink.split("ssl:")[1]
+                except:
+                    continue
+            elif i <= containerCounter4 and i > containerCounter3:
+                try:
+                    embeddedVideos.append(container.a['href'])
                 except:
                     continue
             else:
@@ -271,6 +296,27 @@ def downloadImages(url, urlCounter, useFolders):
 
     linkList = makeConformUrl(sorted(linkList))
     linkList = list(dict.fromkeys(linkList))
+
+    #Hardcoded way of filtering 3rdParty Links
+    thirdPartyLinks = []
+    for entity in linkList:
+        #print(entity)
+        if not str(entity).startswith(("https://data.yiff.party", "https://yiff.party")):
+            #print("3rdParty")
+            thirdPartyLinks.append(entity)
+            linkList.remove(entity)
+
+    thirdPartyLinks.append("\nEmbedded Video Links:")
+    thirdPartyLinks.append(embeddedVideos)
+    #Saves the 3rdParty Links to a respective File in the folder of the author
+    f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "3rdPartyLinks.txt", "w+")
+    for links in thirdPartyLinks:
+        f.write(str(links) + "\n")
+    f.close()
+
+    #print(embeddedVideos) 
+    #for videoLink in embeddedVideos:   #loop to get the video link of the embedded videos
+    #    #linkList.append(getEmbeddedVideos(videoLink))
 
     for h in range(0, len(linkList)-1):
         updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
@@ -336,7 +382,7 @@ def downloadImages(url, urlCounter, useFolders):
         print("Successfully downloaded " + str(imageCounter) + " new Images/Files!\n")
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
 
-    f = open("SkippedLinks.txt", "w+")
+    f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
     for files in missingFiles:
         f.write(files + "\n")
     f.close()
