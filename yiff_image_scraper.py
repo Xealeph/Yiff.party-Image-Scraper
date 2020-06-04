@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup as bs
 import requests
+import re
 import sys
 import os
 import platform as pf
@@ -156,16 +157,14 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
         return
 
 #short function to get the video link from a link with embedded video like https://yiff.party/vimeo/1
-#def getEmbeddedVideos(url): #Only tested with Vimeo Videos so far and also not working
-#    print("embed found with url " + url) 
-#    url = "https://yiff.party/vimeo_embed?v=" + str(url).split("/")[-1]
-#    response = requests.get(url, headers = {'User-Agent': userAgent})
-#    print("response")
-#    soup = bs(response.text, "html.parser")
-#    print("parsing")
-#    link = soup.find('div', {'class':'vp-telecine invisible'}).video['scr']
-#    print("found " + link)
-#    return link
+def getEmbeddedVideos(url): #Only tested with Vimeo Videos so far and also not working
+    #print("embed found with url " + url) 
+    url = "https://yiff.party/vimeo_embed?v=" + str(url).split("/")[-1]
+    response = requests.get(url, headers = {'User-Agent': userAgent})
+    regex = r'("url":"[^,]*\.mp4",)'
+    tempLink = str(re.findall(regex, response.text)[0])
+    link = tempLink.split("\"")[3]
+    return link
 
 def downloadImages(url, urlCounter, useFolders):
     imageNameDict = {}
@@ -300,23 +299,29 @@ def downloadImages(url, urlCounter, useFolders):
     #Hardcoded way of filtering 3rdParty Links
     thirdPartyLinks = []
     for entity in linkList:
-        #print(entity)
         if not str(entity).startswith(("https://data.yiff.party", "https://yiff.party")):
-            #print("3rdParty")
             thirdPartyLinks.append(entity)
             linkList.remove(entity)
 
+    #print(embeddedVideos)
+    for videoLink in embeddedVideos:   #loop to get the video link of the embedded videos
+        try:
+            linkList.append(getEmbeddedVideos(videoLink))
+            #removes embedded links it could find
+            embeddedVideos.remove(videoLink)    
+        except:
+            pass
+    #print(embeddedVideos)
+
+    #embedded video links that couldnt be found get appended to the 3rd party textfile
     thirdPartyLinks.append("\nEmbedded Video Links:")
-    thirdPartyLinks.append(embeddedVideos)
+    thirdPartyLinks += embeddedVideos
+
     #Saves the 3rdParty Links to a respective File in the folder of the author
     f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "3rdPartyLinks.txt", "w+")
-    for links in thirdPartyLinks:
-        f.write(str(links) + "\n")
-    f.close()
-
-    #print(embeddedVideos) 
-    #for videoLink in embeddedVideos:   #loop to get the video link of the embedded videos
-    #    #linkList.append(getEmbeddedVideos(videoLink))
+    for link in thirdPartyLinks:
+        f.write(str(link) + "\n")
+    f.close()  
 
     for h in range(0, len(linkList)-1):
         updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
@@ -363,16 +368,27 @@ def downloadImages(url, urlCounter, useFolders):
 
     print("Starting download of " + str(len(linkList)) + " items.")
     #Loops through the Image Urls and downloads them.
-    for i in range(len(linkList)-1):
-        if useFolders:
-            postFolderName = postDateTitleDict[str(i)]
-        else:
-            postFolderName = False
-        
-        imageName = imageNameDict[str(i)]
-        urlI = linkList[i]
-        print("Downloading " + imageName)           #Shows the name of the current downloading image
-        downloader(urlI, imageName, galleryAuthor, postFolderName)
+    try:
+        for i in range(len(linkList)-1):
+            if useFolders:
+                postFolderName = postDateTitleDict[str(i)]
+            else:
+                postFolderName = False
+
+            imageName = imageNameDict[str(i)]
+            urlI = linkList[i]
+            print("Downloading " + imageName)           #Shows the name of the current downloading image
+            downloader(urlI, imageName, galleryAuthor, postFolderName)
+
+    except KeyboardInterrupt:
+        missingFiles.append(linkList[i:-1])
+        f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
+        for files in missingFiles:
+            f.write(str(files) + "\n")
+        f.close()
+        print("\nSuccessfully skipped " + str(len(missingFiles)) + " existing Images/Files!\n")
+        print("Successfully downloaded " + str(imageCounter) + " new Images/Files!\n")
+        print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
 
     #Just a finishing message.
     if (imageCounter == 0) and (skippedCounter == 0):
@@ -384,7 +400,7 @@ def downloadImages(url, urlCounter, useFolders):
 
     f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
     for files in missingFiles:
-        f.write(files + "\n")
+        f.write(str(files) + "\n")
     f.close()
 
 
