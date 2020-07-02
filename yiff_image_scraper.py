@@ -115,7 +115,6 @@ def makeConformUrl(aList):
             aList[k] = "https://yiff.party" + str(aList[k])
     return aList
 
-
 def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
     global imageCounter
     global skippedCounter
@@ -166,6 +165,29 @@ def getEmbeddedVideos(url): #Only tested with Vimeo Videos so far and also not w
     link = tempLink.split("\"")[3]
     return link
 
+def fantiaSubroutine(postList):
+    linklist = []
+    for postUrl in postList:
+        response = requests.get(postUrl, headers = {'User-Agent': userAgent})
+        soup = bs(response.text, "html.parser")
+        
+        var = soup.find('div', {'class':'col s12 l9'})
+        linklist.append(var.a['href'])
+        var2 = var.find_all('div', {'class':'yp-post-content'})
+        for img in var2:
+            try:
+                linklist.append(img.a['href'])
+                continue
+            except:
+                pass
+            try:
+                imglist = img.find_all('div', {'class': 'ccol s12 m6'})
+                for img in imglist:
+                    linklist.append(img.a['src'])
+            except:
+                pass
+    return linklist
+
 def downloadImages(url, urlCounter, useFolders):
     imageNameDict = {}
     postDateTitleDict = {}
@@ -201,7 +223,6 @@ def downloadImages(url, urlCounter, useFolders):
 
     try: 
         lastPage = int(lastPage[1]["data-pag"])
-        #print(lastPage)
         cLPFlag = getFlag()
         if cLPFlag:
             if cLastPage > lastPage:
@@ -218,22 +239,27 @@ def downloadImages(url, urlCounter, useFolders):
     except:
         lastPage = 1
         imgContainerUrls.append(newUrl + str(1))
-    #print(imgContainerUrls)
     
     potOfAllSoup = ""
     for containerUrl in imgContainerUrls:
-        #print(containerUrl)
+
         response = requests.get(containerUrl, headers = {'User-Agent': userAgent})
         soup = bs(response.text, "html.parser")
         potOfAllSoup = potOfAllSoup + response.text
+
+        if platform == 'fantia':
+            list = []
+            containersFantia = soup.find_all('div', {'class': 'col s12 m6'})
+            for cont in containersFantia:
+                list.append("https://yiff.party" + cont.a['href'].strip())
+            linkList += fantiaSubroutine(list)
+            continue
 
         containersPart1 = soup.find_all('div', {'class': 'card-action'})
         containersPart2 = soup.find_all('div', {'class': 'post-body'})
         containersPart3 = soup.find_all('img', {'class': 'lazyload'})
         containersPart4 = soup.find_all('p', {'class': 'yp-vimeo-proxy-embed'})
         containersPart5 = soup.find_all('div', {'class': 'card-attachments'})
-
-        #print(containersPart4)
 
         containers = containersPart1 + containersPart2 + containersPart3 + containersPart4 + containersPart5
 
@@ -292,9 +318,10 @@ def downloadImages(url, urlCounter, useFolders):
                     continue
 
             linkList.append(shortLink)
-
+    
     linkList = makeConformUrl(sorted(linkList))
-    linkList = list(dict.fromkeys(linkList))
+    if platform != 'fantia':
+        linkList = list(dict.fromkeys(linkList))
 
     #Hardcoded way of filtering 3rdParty Links
     thirdPartyLinks = []
