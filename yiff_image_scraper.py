@@ -248,11 +248,11 @@ def downloadImages(url, urlCounter, useFolders):
         potOfAllSoup = potOfAllSoup + response.text
 
         if platform == 'fantia':
-            list = []
+            fantiaList = []
             containersFantia = soup.find_all('div', {'class': 'col s12 m6'})
             for cont in containersFantia:
-                list.append("https://yiff.party" + cont.a['href'].strip())
-            linkList += fantiaSubroutine(list)
+                fantiaList.append("https://yiff.party" + cont.a['href'].strip())
+            linkList += fantiaSubroutine(fantiaList)
             continue
 
         containersPart1 = soup.find_all('div', {'class': 'card-action'})
@@ -320,8 +320,7 @@ def downloadImages(url, urlCounter, useFolders):
             linkList.append(shortLink)
     
     linkList = makeConformUrl(sorted(linkList))
-    if platform != 'fantia':
-        linkList = list(dict.fromkeys(linkList))
+    linkList = list(dict.fromkeys(linkList))
 
     #Hardcoded way of filtering 3rdParty Links
     thirdPartyLinks = []
