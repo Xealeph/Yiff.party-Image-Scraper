@@ -25,14 +25,14 @@ def getGalleryName(gallNum):
     patreonUrl = "https://yiff.party/patreon/" + gallNum
     fantiaUrl = "https://yiff.party/fantia/" + gallNum
     folderName = ""
-
-    patreonResponse = requests.get(patreonUrl, headers = {'User-Agent': userAgent})
-    if patreonResponse.status_code == 200:
-        folderName = "patreon_" + getName(patreonResponse, gallNum)
+    
+    fantiaResponse = requests.get(fantiaUrl, headers = {'User-Agent': userAgent})
+    if fantiaResponse.status_code == 200:
+        folderName = "fantia_" + getName(fantiaResponse, gallNum)
     else:
-        fantiaResponse = requests.get(fantiaUrl, headers = {'User-Agent': userAgent})
-        if fantiaResponse.status_code == 200:
-            folderName = "fantia_" + getName(patreonResponse, gallNum)
+        patreonResponse = requests.get(patreonUrl, headers = {'User-Agent': userAgent})
+        if patreonResponse.status_code == 200:
+            folderName = "patreon_" + getName(patreonResponse, gallNum)
         else:
             print("Problem getting the gallary platform. Using the gallary number instead.")
             folderName = gallNum
