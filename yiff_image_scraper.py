@@ -188,6 +188,17 @@ def fantiaSubroutine(postList):
                 pass
     return linklist
 
+def getGalleryName(gallUrl, gallNum):
+    try:
+        response = requests.get(gallUrl, headers = {'User-Agent': userAgent})
+        soup = bs(response.text, "html.parser")
+
+        name = soup.find('title').text.split("|")[0]
+        return name.strip()
+    except:
+        print("Problem getting the authors name. Using the authors number instead.")
+        return gallNum
+
 def downloadImages(url, urlCounter, useFolders):
     imageNameDict = {}
     postDateTitleDict = {}
@@ -201,8 +212,9 @@ def downloadImages(url, urlCounter, useFolders):
     #Gets the Gallery Author's number. Fails if link is shorter than https://yiff.party/patreon/1.
     #Also Creates a directory for the images.
     try:    
-        galleryAuthor = url.split("/")[4]
+        galleryNumber = url.split("/")[4]
         platform = url.split("/")[3]
+        galleryAuthor = platform + "_" + getGalleryName(url, galleryNumber)
     except IndexError:
         print("\nThe given url might not be valid.\nSkipping url: " + url + "\n")
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
@@ -215,7 +227,7 @@ def downloadImages(url, urlCounter, useFolders):
     response = requests.get(url, headers = {'User-Agent': userAgent})
     soup = bs(response.text, "html.parser")
 
-    newUrl = "https://yiff.party/render_posts?s=" + platform + "&c=" + galleryAuthor + "&p="
+    newUrl = "https://yiff.party/render_posts?s=" + platform + "&c=" + galleryNumber + "&p="
 
     #searches for the highest page number
     lastPage = soup.find_all('a', {'class':'btn pag-btn'})
