@@ -30,7 +30,7 @@ There is also an additional script, which removes all files with the same md5-ha
 python duplicate_remover.py
 ```
 
-And another one, which changes the name of already downloaded profile folders to their name.
+And another one, which changes the name of already downloaded folders from numbers to their name.
 ```
 python folderRenamer.py
 ```
