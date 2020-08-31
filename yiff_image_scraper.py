@@ -21,6 +21,16 @@ if(system == 'Windows'):
 else:
     dirSep = "/"
 
+print("Please input a path to save your Images in.\nPress the Enter/Return key for the default path.")
+cPath = input().strip()
+if cPath is None:
+    cPath = '.' + dirSep
+elif os.path.isfile(cPath):
+    print("The chosen path leads to a file not a folder")
+    quit()
+elif os.path.isdir(cPath) and cPath[-1] != dirSep:
+    cPath += dirSep
+
 print("\n======Starting Scraper========")
 
 for n in range(amountOfLinks):
@@ -64,8 +74,8 @@ if amountOfLinks <= 0:
     sys.exit()
 
 #Creates Image Directory
-if not os.path.isdir("."+ dirSep +"Images"+ dirSep +""):
-    os.mkdir("."+ dirSep +"Images"+ dirSep +"")
+if not os.path.isdir(cPath +"Images"+ dirSep +""):
+    os.mkdir(cPath +"Images"+ dirSep +"")
 
 
 def getFlag():
@@ -124,11 +134,11 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
             #If we were passed a valid folder name, use it to make a folder for the post
             if (postFolderName != False):
                 # If the folder does not already exist, make it!
-                if not os.path.isdir("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName + dirSep + ""):
-                    os.mkdir("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + "")
+                if not os.path.isdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName + dirSep + ""):
+                    os.mkdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + "")
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName):
-                    with open("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName, 'wb') as f:
+                if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName):
+                    with open(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -138,8 +148,8 @@ def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursivel
             #IF we were passed 'FALSE' instead of a folder name, do not create a folder, but simply save in Author page
             else:
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile("." + dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName):
-                    with open("."+ dirSep + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName, 'wb') as f:
+                if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName):
+                    with open(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
@@ -220,8 +230,8 @@ def downloadImages(url, urlCounter, useFolders):
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
         return
     else:
-        if not os.path.isdir("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep):
-            os.mkdir("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep)
+        if not os.path.isdir(cPath + "Images" + dirSep + galleryAuthor + dirSep):
+            os.mkdir(cPath + "Images" + dirSep + galleryAuthor + dirSep)
     
     #Gets the page and converts/reads it.
     response = requests.get(url, headers = {'User-Agent': userAgent})
@@ -356,7 +366,7 @@ def downloadImages(url, urlCounter, useFolders):
     thirdPartyLinks += embeddedVideos
 
     #Saves the 3rdParty Links to a respective File in the folder of the author
-    f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "3rdPartyLinks.txt", "w+")
+    f = open(cPath + "Images" + dirSep + galleryAuthor + dirSep + "3rdPartyLinks.txt", "w+")
     for link in thirdPartyLinks:
         f.write(str(link) + "\n")
     f.close()  
@@ -420,7 +430,7 @@ def downloadImages(url, urlCounter, useFolders):
 
     except KeyboardInterrupt:
         missingFiles.append(linkList[i:-1])
-        f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
+        f = open(cPath + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
         for files in missingFiles:
             f.write(str(files) + "\n")
         f.close()
@@ -436,7 +446,7 @@ def downloadImages(url, urlCounter, useFolders):
         print("Successfully downloaded " + str(imageCounter) + " new Images/Files!\n")
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
 
-    f = open("." + dirSep + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
+    f = open(cPath + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
     for files in missingFiles:
         f.write(str(files) + "\n")
     f.close()
