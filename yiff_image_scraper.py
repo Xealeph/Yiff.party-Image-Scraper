@@ -21,7 +21,7 @@ if(system == 'Windows'):
 else:
     dirSep = "/"
 
-print("Please input a path to save your Images in.\nPress the Enter/Return key for the default path.")
+print("Please input a path to save your Images in.\nLeave blank for the default path.")
 cPath = input().strip()
 if cPath is None:
     cPath = '.' + dirSep
