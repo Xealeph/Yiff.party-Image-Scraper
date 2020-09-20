@@ -11,6 +11,8 @@ imageCounter = 0
 skippedCounter = 0
 urlList = []
 missingFiles = []
+downloadedFiles = []
+dlFileList = []
 userAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36"
 dirSep = ""
 system = pf.system()
@@ -77,6 +79,9 @@ if amountOfLinks <= 0:
 if not os.path.isdir(cPath +"Images"+ dirSep +""):
     os.mkdir(cPath +"Images"+ dirSep +"")
 
+#Creates Database Directory
+if not os.path.isdir(cPath +"DB"+ dirSep +""):
+    os.mkdir(cPath +"DB"+ dirSep +"")
 
 def getFlag():
     return cLastPageFlag
@@ -128,31 +133,38 @@ def makeConformUrl(aList):
 def downloader(myUrl, myImageName, myGalleryAuthor, postFolderName): #recursively tries to download the images - in the case of the site not accepting anymore requests
     global imageCounter
     global skippedCounter
+    global downloadedFiles
+    global dlFileList
     try:
         r = requests.get(myUrl, headers = {'User-Agent': userAgent}, timeout=(30,30), stream=True)
         if r.status_code == 200:
             #If we were passed a valid folder name, use it to make a folder for the post
             if (postFolderName != False):
-                # If the folder does not already exist, make it!
-                if not os.path.isdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName + dirSep + ""):
-                    os.mkdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + "")
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName):
+                #if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName):
+                if not myImageName in dlFileList:
+                    # If the folder does not already exist, make it!
+                    if not os.path.isdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName + dirSep + ""):
+                        os.mkdir(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + "")
+
                     with open(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + postFolderName+ dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
+                    downloadedFiles.append(myImageName)
                 else:
                     print(">Skipped, already exists!")
                     skippedCounter += 1
             #IF we were passed 'FALSE' instead of a folder name, do not create a folder, but simply save in Author page
             else:
                 # If the file doesn't already exist, download it!
-                if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName):
+                #if not os.path.isfile(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName):
+                if not myImageName in dlFileList:
                     with open(cPath + "Images" + dirSep + myGalleryAuthor + dirSep + myImageName, 'wb') as f:
                         for chunk in r:
                             f.write(chunk)
                     imageCounter += 1
+                    downloadedFiles.append(myImageName)
                 else:
                     print(">Skipped, already exists!")
                     skippedCounter += 1
@@ -218,6 +230,9 @@ def downloadImages(url, urlCounter, useFolders):
     embeddedVideos = []
     global imageCounter
     imageCounter = 0
+    global downloadedFiles
+    downloadedFiles.clear()
+    global dlFileList
 
     #Gets the Gallery Author's number. Fails if link is shorter than https://yiff.party/patreon/1.
     #Also Creates a directory for the images.
@@ -371,6 +386,15 @@ def downloadImages(url, urlCounter, useFolders):
         f.write(str(link) + "\n")
     f.close()  
 
+    #Creates or checks for a 'db' file
+    if not os.path.isfile("." + dirSep + "DB" + dirSep + galleryNumber + ".txt"):
+        f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'w')
+        f.writelines(galleryAuthor + '\n;')
+        f.close()
+    f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'r')
+    dlFileList = f.read()#.split(';')[1:]
+    f.close()
+
     for h in range(0, len(linkList)-1):
         updatedValue = {str(h):str(linkList[h].split("/")[len(linkList[h].split("/"))-1])}
         imageNameDict.update(updatedValue)
@@ -414,7 +438,7 @@ def downloadImages(url, urlCounter, useFolders):
 
             postDateTitleDict.update(dateTitle)
 
-    print("Starting download of " + str(len(linkList)) + " items.")
+    print("Starting download of " + str(len(linkList)-1) + " items.")
     #Loops through the Image Urls and downloads them.
     try:
         for i in range(len(linkList)-1):
@@ -429,6 +453,9 @@ def downloadImages(url, urlCounter, useFolders):
             downloader(urlI, imageName, galleryAuthor, postFolderName)
 
     except KeyboardInterrupt:
+        f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'a+')
+        f.write(';'.join(downloadedFiles))
+        f.close()
         missingFiles.append(linkList[i:-1])
         f = open(cPath + "Images" + dirSep + galleryAuthor + dirSep + "SkippedLinks.txt", "w+")
         for files in missingFiles:
@@ -437,6 +464,11 @@ def downloadImages(url, urlCounter, useFolders):
         print("\nSuccessfully skipped " + str(len(missingFiles)) + " existing Images/Files!\n")
         print("Successfully downloaded " + str(imageCounter) + " new Images/Files!\n")
         print("============" + str(urlCounter) + "/" + str(amountOfLinks) + "===============\n")
+        quit()
+
+    f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'a+')
+    f.write(';'.join(downloadedFiles))
+    f.close()
 
     #Just a finishing message.
     if (imageCounter == 0) and (skippedCounter == 0):
