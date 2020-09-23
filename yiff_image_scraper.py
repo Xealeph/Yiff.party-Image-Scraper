@@ -388,10 +388,10 @@ def downloadImages(url, urlCounter, useFolders):
 
     #Creates or checks for a 'db' file
     if not os.path.isfile("." + dirSep + "DB" + dirSep + galleryNumber + ".txt"):
-        f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'w')
+        f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'w', encoding='utf-8')
         f.writelines(galleryAuthor + '\n;')
         f.close()
-    f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'r')
+    f = open("." + dirSep + "DB" + dirSep + galleryNumber + ".txt", 'r', encoding='utf-8')
     dlFileList = f.read()#.split(';')[1:]
     f.close()
 
