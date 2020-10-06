@@ -193,21 +193,24 @@ def fantiaSubroutine(postList):
         response = requests.get(postUrl, headers = {'User-Agent': userAgent})
         soup = bs(response.text, "html.parser")
         
-        var = soup.find('div', {'class':'col s12 l9'})
-        linklist.append(var.a['href'])
-        var2 = var.find_all('div', {'class':'yp-post-content'})
-        for img in var2:
-            try:
-                linklist.append(img.a['href'])
-                continue
-            except:
-                pass
-            try:
-                imglist = img.find_all('div', {'class': 'ccol s12 m6'})
-                for img in imglist:
-                    linklist.append(img.a['src'])
-            except:
-                pass
+        try:
+            var = soup.find('div', {'class':'col s12 l9'})
+            linklist.append(var.a['href'])
+            var2 = var.find_all('div', {'class':'yp-post-content'})
+            for img in var2:
+                try:
+                    linklist.append(img.a['href'])
+                    continue
+                except:
+                    pass
+                try:
+                    imglist = img.find_all('div', {'class': 'ccol s12 m6'})
+                    for img in imglist:
+                        linklist.append(img.a['src'])
+                except:
+                    pass
+        except TypeError:
+            pass
     return linklist
 
 def getGalleryName(gallUrl, gallNum):
